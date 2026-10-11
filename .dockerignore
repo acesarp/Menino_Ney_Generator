@@ -1,0 +1,11 @@
+.venv/
+.git/
+.github/
+.vscode/
+__pycache__/
+generated/
+uploads/
+bridge/
+.env
+.streamlit/secrets.toml
+*.code-workspace

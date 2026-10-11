@@ -1,0 +1,77 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Pylint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+
+      - name: Analyse the code with pylint
+        run: pylint --errors-only --disable=import-error $(git ls-files '*.py')
+
+  deploy:
+    name: Deploy to VM
+    needs: check
+    # The only job on the self-hosted runner (the home server). Keep it gated to direct pushes to
+    # main -- github.ref for a pull_request event is refs/pull/N/merge, never refs/heads/main, so
+    # a PR (including one from a fork) can never reach the runner or the secrets.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, meninoney]
+    # Never run two deploys at once; a newer push waits for the current one to finish.
+    concurrency:
+      group: deploy-meninoney
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write .env from secrets
+        # compose reads the keys from .env (env_file). The file is readable only by the runner user.
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: |
+          umask 077
+          printf 'OPENAI_API_KEY=%s\nAPP_PASSWORD=%s\n' "$OPENAI_API_KEY" "$APP_PASSWORD" > .env
+
+      - name: Build and restart
+        # The image is built on the VM itself, so no registry or registry login is involved.
+        run: |
+          docker compose build
+          docker compose up -d
+          docker image prune -f
+
+      - name: Smoke test
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://localhost:8502/_stcore/health; then
+              echo "App is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::The app did not respond on port 8502"
+          docker compose logs --tail 50
+          exit 1
+
+      - name: Remove .env
+        if: always()
+        run: rm -f .env

@@ -1,0 +1,29 @@
+# Ambiente Virtual local (NUNCA envie isso para o GitHub/Git)
+.venv/
+venv/
+ENV/
+
+# Caches do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Configurações locais do editor (Antigravity / VS Code)
+.vscode/
+.idea/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Segredos (chaves de API, senhas) -- nunca vão para o git
+.env
+.streamlit/secrets.toml
+
+# Arquivos gerados pelo app
+uploads/
+generated/
+
+# Manifests do Kubernetes gerados pelo Docker Desktop (contêm a chave em texto puro)
+bridge/

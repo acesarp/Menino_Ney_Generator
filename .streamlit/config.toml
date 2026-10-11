@@ -1,0 +1,15 @@
+[server]
+headless = true
+enableXsrfProtection = true
+# The app is served through IIS at https://guto.ca/meninoneygenerator, so the browser's Origin
+# differs from the container's own address. Only that origin may open the WebSocket.
+corsAllowedOrigins = ["https://guto.ca"]
+enableWebsocketCompression = false
+# Uploads maiores que isso são recusados (MB).
+maxUploadSize = 20
+
+[browser]
+gatherUsageStats = false
+
+[logger]
+level = "info"

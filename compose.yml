@@ -1,0 +1,20 @@
+name: meninoney-generator
+
+services:
+  meninoney-generator:
+    build: .
+    image: meninoney-generator
+    container_name: meninoney-generator
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8502}:8502"
+    # OPENAI_API_KEY (and optionally APP_PASSWORD) come only from .env. Don't add them under
+    # "environment:" with ${...}: compose would then take them from the shell or the Windows
+    # environment first, and an old key there would override the one in .env.
+    env_file:
+      - .env
+    volumes:
+      - generated:/app/generated
+
+volumes:
+  generated:
